@@ -1,9 +1,8 @@
-// Full Notifications center built in Phase 10 (docs/UIUX-touq.md #C.11).
+import type { Metadata } from "next";
+import { NotificationList } from "@/features/notifications/components/notification-list";
+
+export const metadata: Metadata = { title: "الإشعارات" };
+
 export default function NotificationsPage() {
-  return (
-    <main className="p-8">
-      <h1 className="text-xl font-semibold">الإشعارات</h1>
-      <p className="mt-2 text-muted-foreground">قيد الإنشاء (Phase 10)</p>
-    </main>
-  );
+  return <NotificationList />;
 }

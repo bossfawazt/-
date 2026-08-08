@@ -2,6 +2,7 @@
 
 import { Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { currentLocale, setLocale } from "@/lib/locale";
 
 /**
  * docs/UIUX-touq.md #A.4: lives in the same global position on every page;
@@ -15,11 +16,7 @@ import { Button } from "@/components/ui/button";
  */
 export function LanguageToggle() {
   function toggleLocale() {
-    const isArabic = document.documentElement.lang === "ar";
-    const nextLocale = isArabic ? "en" : "ar";
-    document.cookie = `locale=${nextLocale}; path=/; max-age=31536000`;
-    document.documentElement.lang = nextLocale;
-    document.documentElement.dir = nextLocale === "ar" ? "rtl" : "ltr";
+    setLocale(currentLocale() === "ar" ? "en" : "ar");
   }
 
   return (

@@ -19,3 +19,17 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/notificati
 
   return apiOk(updated);
 }
+
+export async function DELETE(_request: Request, ctx: RouteContext<"/api/notifications/[notificationId]">) {
+  const session = await auth();
+  if (!session?.user) return apiError("unauthorized", "يجب تسجيل الدخول", 401);
+
+  const { notificationId } = await ctx.params;
+  const notification = await db.notificationEvent.findUnique({ where: { id: notificationId } });
+  if (!notification || notification.userId !== session.user.id) {
+    return apiError("not_found", "الإشعار غير موجود", 404);
+  }
+
+  await db.notificationEvent.delete({ where: { id: notificationId } });
+  return apiOk({ ok: true });
+}

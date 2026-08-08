@@ -47,3 +47,15 @@ export function useMarkAllNotificationsReadMutation() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
+
+export function useDeleteNotificationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (notificationId: string) => {
+      const res = await fetch(`/api/notifications/${notificationId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("تعذر حذف الإشعار");
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}

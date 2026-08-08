@@ -74,6 +74,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (user || trigger === "update" || !token.loaded) {
         const context = await loadAuthContext(token.userId as string);
+        token.name = context.name;
+        token.email = context.email;
         token.phone = context.phone;
         token.locale = context.locale;
         token.platformRole = context.platformRole;
@@ -84,6 +86,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       session.user.id = token.userId;
+      session.user.name = token.name;
+      if (token.email) session.user.email = token.email;
       session.user.phone = token.phone;
       session.user.locale = token.locale;
       session.user.platformRole = token.platformRole;

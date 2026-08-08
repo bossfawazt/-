@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BusinessDetailsInput, OtpSendInput, RegisterInput } from "@/lib/validations/auth";
 
 interface ApiError {
@@ -52,6 +52,7 @@ export function useRegionsQuery() {
 }
 
 export function useUpdateOrganizationMutation(organizationId: string) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: BusinessDetailsInput) => {
       const res = await fetch(`/api/organizations/${organizationId}`, {
@@ -63,5 +64,6 @@ export function useUpdateOrganizationMutation(organizationId: string) {
       if (!res.ok) throw new Error(json.error?.message ?? "تعذر حفظ البيانات");
       return json.data;
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["organization", organizationId] }),
   });
 }

@@ -38,6 +38,8 @@ declare module "next-auth" {
 declare module "@auth/core/jwt" {
   interface JWT {
     userId: string;
+    name: string;
+    email: string | null;
     phone: string;
     locale: string;
     platformRole: RoleName | null;

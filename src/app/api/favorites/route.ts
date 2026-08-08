@@ -2,6 +2,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiError, apiOk, apiValidationError } from "@/lib/api-response";
+import { getFavorites } from "@/server/services/favorites.service";
 
 const toggleSchema = z
   .object({ supplierId: z.string().uuid().optional(), productId: z.string().uuid().optional() })
@@ -14,15 +15,7 @@ export async function GET() {
   const session = await auth();
   if (session?.user.organization?.type !== "MERCHANT") return apiError("forbidden", "متاح للتجار فقط", 403);
 
-  const favorites = await db.favorite.findMany({
-    where: { merchantId: session.user.organization.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      supplier: true,
-      product: { include: { media: { where: { isPrimary: true }, take: 1 }, supplier: true, variants: { include: { pricingTiers: true }, take: 1 } } },
-    },
-  });
-
+  const favorites = await getFavorites(session.user.organization.id);
   return apiOk(favorites);
 }
 

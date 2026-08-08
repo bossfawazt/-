@@ -10,7 +10,7 @@ import type { SessionOrganization } from "@/types/next-auth";
  */
 export async function loadAuthContext(userId: string) {
   const [user, platformRoleAssignment, membership] = await Promise.all([
-    db.user.findUnique({ where: { id: userId }, select: { phone: true, locale: true } }),
+    db.user.findUnique({ where: { id: userId }, select: { name: true, email: true, phone: true, locale: true } }),
     db.platformRoleAssignment.findFirst({
       where: { userId },
       include: { role: true },
@@ -35,6 +35,8 @@ export async function loadAuthContext(userId: string) {
     : null;
 
   return {
+    name: user?.name ?? "",
+    email: user?.email ?? null,
     phone: user?.phone ?? "",
     locale: user?.locale ?? "ar",
     platformRole,

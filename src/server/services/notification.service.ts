@@ -14,6 +14,12 @@ export async function notify(params: {
   body: string;
   linkUrl?: string;
 }) {
+  const preference = await db.notificationPreference.findUnique({
+    where: { userId_eventType_channel: { userId: params.userId, eventType: params.eventType, channel: "IN_APP" } },
+    select: { enabled: true },
+  });
+  if (preference?.enabled === false) return;
+
   await db.notificationEvent.create({
     data: {
       userId: params.userId,
