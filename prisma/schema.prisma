@@ -1,0 +1,679 @@
+// touq (توق) — Prisma schema
+//
+// Maps directly to the entity design in docs/ARCHITECTURE-touq.md #2.
+// Table/column names use snake_case via @@map/@map to match that document
+// exactly; Prisma model/field names stay camelCase for idiomatic TS usage.
+//
+// Scope: MVP entities only (Phases 1-11 of the build). Payments, shipments,
+// subscriptions/plans, featured placements and integration_connections are
+// intentionally deferred — see docs/ROADMAP-touq.md M8/M10/M12.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Identity & Organizations (ARCHITECTURE-touq.md #2.2)
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id               String     @id @default(uuid(7))
+  phone            String     @unique
+  phoneCountryCode String     @default("+966") @map("phone_country_code")
+  email            String?    @unique
+  passwordHash     String?    @map("password_hash")
+  name             String
+  locale           String     @default("ar")
+  status           UserStatus @default(ACTIVE)
+  phoneVerifiedAt  DateTime?  @map("phone_verified_at")
+  emailVerifiedAt  DateTime?  @map("email_verified_at")
+  mfaEnabled       Boolean    @default(false) @map("mfa_enabled")
+  lastLoginAt      DateTime?  @map("last_login_at")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  memberships             OrganizationMember[]
+  platformRoles           PlatformRoleAssignment[]
+  notifications           NotificationEvent[]
+  notificationPreferences NotificationPreference[]
+  rfqMessages             RfqMessage[]
+  reviewedDocuments       VerificationDocument[]   @relation("DocumentReviewer")
+  invitedMembers          OrganizationMember[]     @relation("MemberInviter")
+  orderStatusChanges      OrderStatusHistory[]
+  disputesRaised          Dispute[]                @relation("DisputeRaiser")
+  disputesResolved        Dispute[]                @relation("DisputeResolver")
+  auditLogs               AuditLog[]
+
+  @@map("users")
+}
+
+enum OtpPurpose {
+  REGISTER
+  LOGIN
+}
+
+model OtpCode {
+  id         String     @id @default(uuid(7))
+  phone      String
+  codeHash   String     @map("code_hash")
+  purpose    OtpPurpose
+  attempts   Int        @default(0)
+  expiresAt  DateTime   @map("expires_at")
+  consumedAt DateTime?  @map("consumed_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  @@index([phone, purpose])
+  @@map("otp_codes")
+}
+
+enum OrganizationType {
+  SUPPLIER
+  MERCHANT
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum OrganizationStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+model Organization {
+  id                     String             @id @default(uuid(7))
+  type                   OrganizationType
+  legalNameAr            String             @map("legal_name_ar")
+  legalNameEn            String?            @map("legal_name_en")
+  crNumber               String?            @map("cr_number")
+  maroofId               String?            @map("maroof_id")
+  verificationStatus     VerificationStatus @default(PENDING) @map("verification_status")
+  regionId               String?            @map("region_id")
+  region                 Region?            @relation(fields: [regionId], references: [id])
+  city                   String?
+  address                String?
+  logoUrl                String?            @map("logo_url")
+  coverUrl               String?            @map("cover_url")
+  descriptionAr          String?            @map("description_ar")
+  descriptionEn          String?            @map("description_en")
+  status                 OrganizationStatus @default(PENDING)
+  ratingAvg              Decimal            @default(0) @map("rating_avg") @db.Decimal(3, 2)
+  ratingCount            Int                @default(0) @map("rating_count")
+  responseTimeAvgMinutes Int?               @map("response_time_avg_minutes")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+
+  members               OrganizationMember[]
+  products              Product[]
+  verificationDocuments VerificationDocument[]
+  rfqsAsMerchant        Rfq[]                  @relation("RfqMerchant")
+  rfqsAsSupplier        Rfq[]                  @relation("RfqSupplier")
+  quotes                Quote[]
+  ordersAsMerchant      Order[]                @relation("OrderMerchant")
+  ordersAsSupplier      Order[]                @relation("OrderSupplier")
+  reviewsGiven          Review[]               @relation("ReviewAuthor")
+  reviewsReceived       Review[]               @relation("ReviewSupplier")
+  favoritedSuppliers    Favorite[]             @relation("FavoriteMerchant")
+  favoritedByMerchants  Favorite[]             @relation("FavoriteSupplier")
+
+  @@map("organizations")
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  REMOVED
+}
+
+model OrganizationMember {
+  id              String       @id @default(uuid(7))
+  organizationId  String       @map("organization_id")
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId          String       @map("user_id")
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId          String       @map("role_id")
+  role            Role         @relation(fields: [roleId], references: [id])
+  status          MemberStatus @default(ACTIVE)
+  invitedByUserId String?      @map("invited_by_user_id")
+  invitedBy       User?        @relation("MemberInviter", fields: [invitedByUserId], references: [id])
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+enum RoleScope {
+  PLATFORM
+  ORGANIZATION
+}
+
+model Role {
+  id          String    @id @default(uuid(7))
+  name        String    @unique
+  scope       RoleScope
+  description String?
+
+  members         OrganizationMember[]
+  permissions     RolePermission[]
+  platformMembers PlatformRoleAssignment[]
+
+  @@map("roles")
+}
+
+/// Assigns a PLATFORM-scope Role (super_admin, ops_admin) directly to a User.
+/// Organization-scope roles (org_owner, org_staff) go through OrganizationMember
+/// instead, since they only make sense in the context of a supplier/merchant org.
+model PlatformRoleAssignment {
+  id        String   @id @default(uuid(7))
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String   @map("role_id")
+  role      Role     @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, roleId])
+  @@map("platform_role_assignments")
+}
+
+model Permission {
+  id          String  @id @default(uuid(7))
+  key         String  @unique
+  description String?
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String     @map("permission_id")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model VerificationDocument {
+  id               String             @id @default(uuid(7))
+  organizationId   String             @map("organization_id")
+  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  docType          String             @map("doc_type")
+  fileUrl          String             @map("file_url")
+  status           VerificationStatus @default(PENDING)
+  reviewedByUserId String?            @map("reviewed_by_user_id")
+  reviewedBy       User?              @relation("DocumentReviewer", fields: [reviewedByUserId], references: [id])
+  reviewedAt       DateTime?          @map("reviewed_at")
+  rejectionReason  String?            @map("rejection_reason")
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  @@map("verification_documents")
+}
+
+model Region {
+  id       String   @id @default(uuid(7))
+  nameAr   String   @map("name_ar")
+  nameEn   String   @map("name_en")
+  parentId String?  @map("parent_id")
+  parent   Region?  @relation("RegionHierarchy", fields: [parentId], references: [id])
+  children Region[] @relation("RegionHierarchy")
+
+  organizations Organization[]
+
+  @@map("regions")
+}
+
+// ---------------------------------------------------------------------------
+// Catalog (ARCHITECTURE-touq.md #2.3)
+// ---------------------------------------------------------------------------
+
+model Category {
+  id       String     @id @default(uuid(7))
+  parentId String?    @map("parent_id")
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  nameAr   String     @map("name_ar")
+  nameEn   String     @map("name_en")
+  slug     String     @unique
+
+  attributeDefinitions AttributeDefinition[]
+  products             Product[]
+
+  @@map("categories")
+}
+
+enum AttributeType {
+  ENUM
+  TEXT
+  NUMBER
+}
+
+model AttributeDefinition {
+  id           String        @id @default(uuid(7))
+  categoryId   String        @map("category_id")
+  category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  key          String
+  labelAr      String        @map("label_ar")
+  labelEn      String        @map("label_en")
+  type         AttributeType
+  isFilterable Boolean       @default(true) @map("is_filterable")
+  sortOrder    Int           @default(0) @map("sort_order")
+
+  options AttributeOption[]
+  values  ProductAttributeValue[]
+
+  @@unique([categoryId, key])
+  @@map("attribute_definitions")
+}
+
+model AttributeOption {
+  id                    String              @id @default(uuid(7))
+  attributeDefinitionId String              @map("attribute_definition_id")
+  attributeDefinition   AttributeDefinition @relation(fields: [attributeDefinitionId], references: [id], onDelete: Cascade)
+  valueAr               String              @map("value_ar")
+  valueEn               String              @map("value_en")
+  sortOrder             Int                 @default(0) @map("sort_order")
+
+  productValues ProductAttributeValue[]
+
+  @@map("attribute_options")
+}
+
+enum ProductStatus {
+  DRAFT
+  PENDING_REVIEW
+  LIVE
+  PAUSED
+  REJECTED
+  ARCHIVED
+}
+
+model Product {
+  id              String        @id @default(uuid(7))
+  supplierId      String        @map("supplier_id")
+  supplier        Organization  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  categoryId      String        @map("category_id")
+  category        Category      @relation(fields: [categoryId], references: [id])
+  titleAr         String        @map("title_ar")
+  titleEn         String?       @map("title_en")
+  descriptionAr   String?       @map("description_ar")
+  descriptionEn   String?       @map("description_en")
+  status          ProductStatus @default(DRAFT)
+  rejectionReason String?       @map("rejection_reason")
+  publishedAt     DateTime?     @map("published_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  attributeValues ProductAttributeValue[]
+  variants        ProductVariant[]
+  media           ProductMedia[]
+  rfqs            Rfq[]
+  favoritedBy     Favorite[]
+
+  @@index([supplierId, status])
+  @@index([categoryId, status])
+  @@map("products")
+}
+
+model ProductAttributeValue {
+  productId             String              @map("product_id")
+  product               Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeDefinitionId String              @map("attribute_definition_id")
+  attributeDefinition   AttributeDefinition @relation(fields: [attributeDefinitionId], references: [id], onDelete: Cascade)
+  attributeOptionId     String?             @map("attribute_option_id")
+  attributeOption       AttributeOption?    @relation(fields: [attributeOptionId], references: [id])
+  valueText             String?             @map("value_text")
+
+  @@id([productId, attributeDefinitionId])
+  @@map("product_attribute_values")
+}
+
+enum StockStatus {
+  IN_STOCK
+  MADE_TO_ORDER
+  OUT_OF_STOCK
+}
+
+enum VariantStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model ProductVariant {
+  id           String        @id @default(uuid(7))
+  productId    String        @map("product_id")
+  product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku          String?       @unique
+  color        String?
+  size         String?
+  moq          Int           @default(1)
+  leadTimeDays Int           @default(7) @map("lead_time_days")
+  stockStatus  StockStatus   @default(IN_STOCK) @map("stock_status")
+  status       VariantStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  pricingTiers PricingTier[]
+  media        ProductMedia[]
+  rfqs         Rfq[]
+  orderItems   OrderItem[]
+
+  @@map("product_variants")
+}
+
+model PricingTier {
+  id             String         @id @default(uuid(7))
+  variantId      String         @map("variant_id")
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  minQty         Int            @map("min_qty")
+  maxQty         Int?           @map("max_qty")
+  unitPriceMinor Int            @map("unit_price_minor")
+  currency       String         @default("SAR")
+
+  @@index([variantId])
+  @@map("pricing_tiers")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model ProductMedia {
+  id        String          @id @default(uuid(7))
+  productId String          @map("product_id")
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?         @map("variant_id")
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  mediaType MediaType       @default(IMAGE) @map("media_type")
+  url       String
+  sortOrder Int             @default(0) @map("sort_order")
+  isPrimary Boolean         @default(false) @map("is_primary")
+
+  @@map("product_media")
+}
+
+model Favorite {
+  id         String        @id @default(uuid(7))
+  merchantId String        @map("merchant_id")
+  merchant   Organization  @relation("FavoriteMerchant", fields: [merchantId], references: [id], onDelete: Cascade)
+  supplierId String?       @map("supplier_id")
+  supplier   Organization? @relation("FavoriteSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  productId  String?       @map("product_id")
+  product    Product?      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  @@unique([merchantId, supplierId])
+  @@unique([merchantId, productId])
+  @@map("favorites")
+}
+
+// ---------------------------------------------------------------------------
+// RFQ, Quotes & Orders (ARCHITECTURE-touq.md #2.4)
+// ---------------------------------------------------------------------------
+
+enum RfqStatus {
+  SUBMITTED
+  VIEWED
+  QUOTED
+  NEGOTIATING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+model Rfq {
+  id                 String          @id @default(uuid(7))
+  merchantId         String          @map("merchant_id")
+  merchant           Organization    @relation("RfqMerchant", fields: [merchantId], references: [id], onDelete: Cascade)
+  supplierId         String          @map("supplier_id")
+  supplier           Organization    @relation("RfqSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  productId          String?         @map("product_id")
+  product            Product?        @relation(fields: [productId], references: [id])
+  variantId          String?         @map("variant_id")
+  variant            ProductVariant? @relation(fields: [variantId], references: [id])
+  requestedQty       Int             @map("requested_qty")
+  targetPriceMinor   Int?            @map("target_price_minor")
+  customizationNotes String?         @map("customization_notes")
+  status             RfqStatus       @default(SUBMITTED)
+  expiresAt          DateTime?       @map("expires_at")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  messages RfqMessage[]
+  quotes   Quote[]
+  order    Order?
+
+  @@index([supplierId, status])
+  @@index([merchantId, status])
+  @@map("rfqs")
+}
+
+model RfqMessage {
+  id            String   @id @default(uuid(7))
+  rfqId         String   @map("rfq_id")
+  rfq           Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  senderUserId  String   @map("sender_user_id")
+  sender        User     @relation(fields: [senderUserId], references: [id])
+  body          String
+  attachmentUrl String?  @map("attachment_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([rfqId])
+  @@map("rfq_messages")
+}
+
+enum QuoteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  SUPERSEDED
+}
+
+model Quote {
+  id                   String       @id @default(uuid(7))
+  rfqId                String       @map("rfq_id")
+  rfq                  Rfq          @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  supplierId           String       @map("supplier_id")
+  supplier             Organization @relation(fields: [supplierId], references: [id])
+  quotedQty            Int          @map("quoted_qty")
+  quotedUnitPriceMinor Int          @map("quoted_unit_price_minor")
+  leadTimeDays         Int          @map("lead_time_days")
+  validUntil           DateTime     @map("valid_until")
+  status               QuoteStatus  @default(PENDING)
+  createdAt            DateTime     @default(now()) @map("created_at")
+
+  order Order?
+
+  @@index([rfqId])
+  @@map("quotes")
+}
+
+enum OrderStatus {
+  CONFIRMED
+  IN_PRODUCTION
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  OFF_PLATFORM
+}
+
+model Order {
+  id               String        @id @default(uuid(7))
+  rfqId            String        @unique @map("rfq_id")
+  rfq              Rfq           @relation(fields: [rfqId], references: [id])
+  quoteId          String        @unique @map("quote_id")
+  quote            Quote         @relation(fields: [quoteId], references: [id])
+  merchantId       String        @map("merchant_id")
+  merchant         Organization  @relation("OrderMerchant", fields: [merchantId], references: [id])
+  supplierId       String        @map("supplier_id")
+  supplier         Organization  @relation("OrderSupplier", fields: [supplierId], references: [id])
+  status           OrderStatus   @default(CONFIRMED)
+  paymentStatus    PaymentStatus @default(OFF_PLATFORM) @map("payment_status")
+  totalAmountMinor Int           @map("total_amount_minor")
+  currency         String        @default("SAR")
+  confirmedAt      DateTime      @default(now()) @map("confirmed_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  review        Review?
+  dispute       Dispute?
+
+  @@index([merchantId, status])
+  @@index([supplierId, status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String         @id @default(uuid(7))
+  orderId        String         @map("order_id")
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId      String         @map("variant_id")
+  variant        ProductVariant @relation(fields: [variantId], references: [id])
+  qty            Int
+  unitPriceMinor Int            @map("unit_price_minor")
+  subtotalMinor  Int            @map("subtotal_minor")
+
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id              String       @id @default(uuid(7))
+  orderId         String       @map("order_id")
+  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus      OrderStatus? @map("from_status")
+  toStatus        OrderStatus  @map("to_status")
+  changedByUserId String?      @map("changed_by_user_id")
+  changedBy       User?        @relation(fields: [changedByUserId], references: [id])
+  note            String?
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+model Review {
+  id         String       @id @default(uuid(7))
+  orderId    String       @unique @map("order_id")
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  merchantId String       @map("merchant_id")
+  merchant   Organization @relation("ReviewAuthor", fields: [merchantId], references: [id])
+  supplierId String       @map("supplier_id")
+  supplier   Organization @relation("ReviewSupplier", fields: [supplierId], references: [id])
+  rating     Int
+  comment    String?
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  @@index([supplierId])
+  @@map("reviews")
+}
+
+enum DisputeStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  REJECTED
+}
+
+model Dispute {
+  id               String        @id @default(uuid(7))
+  orderId          String        @unique @map("order_id")
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  raisedByUserId   String        @map("raised_by_user_id")
+  raisedBy         User          @relation("DisputeRaiser", fields: [raisedByUserId], references: [id])
+  reason           String
+  status           DisputeStatus @default(OPEN)
+  resolutionNotes  String?       @map("resolution_notes")
+  resolvedByUserId String?       @map("resolved_by_user_id")
+  resolvedBy       User?         @relation("DisputeResolver", fields: [resolvedByUserId], references: [id])
+  resolvedAt       DateTime?     @map("resolved_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  @@map("disputes")
+}
+
+// ---------------------------------------------------------------------------
+// Notifications & Audit (ARCHITECTURE-touq.md #2.6)
+// ---------------------------------------------------------------------------
+
+enum NotificationChannel {
+  IN_APP
+  SMS
+  WHATSAPP
+  EMAIL
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  READ
+}
+
+model NotificationEvent {
+  id          String              @id @default(uuid(7))
+  userId      String              @map("user_id")
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType   String              @map("event_type")
+  channel     NotificationChannel
+  title       String
+  body        String
+  linkUrl     String?             @map("link_url")
+  payloadJson Json?               @map("payload_json")
+  status      NotificationStatus  @default(QUEUED)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  sentAt      DateTime?           @map("sent_at")
+  readAt      DateTime?           @map("read_at")
+
+  @@index([userId, status])
+  @@map("notification_events")
+}
+
+model NotificationPreference {
+  id        String              @id @default(uuid(7))
+  userId    String              @map("user_id")
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType String              @map("event_type")
+  channel   NotificationChannel
+  enabled   Boolean             @default(true)
+
+  @@unique([userId, eventType, channel])
+  @@map("notification_preferences")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid(7))
+  actorUserId  String?  @map("actor_user_id")
+  actor        User?    @relation(fields: [actorUserId], references: [id])
+  action       String
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  metadataJson Json?    @map("metadata_json")
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

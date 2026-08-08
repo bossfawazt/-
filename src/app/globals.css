@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — mirrors docs/UIUX-touq.md Part A (design foundations).
+ * Semantic slot names (background/foreground/primary/...) follow the
+ * shadcn/ui convention so every hand-built primitive in components/ui
+ * stays reskinnable from this single file.
+ */
+:root {
+  /* Brand palette (UIUX #A.2) */
+  --surface-ivory: #f8f4ee;
+  --surface-white: #ffffff;
+  --surface-charcoal-deep: #14120f;
+  --text-primary: #201d1a;
+  --text-secondary: #5c564e;
+  --text-on-dark: #f3efe8;
+  --brand-gold: #a9782e;
+  --brand-gold-hover: #8a611f;
+  --border-sand: #e6ded0;
+  --status-success: #6b8f71;
+  --status-warning: #c08a3e;
+  --status-error: #b5533c;
+  --status-info: #5a7a94;
+
+  /* Semantic slots (shadcn-compatible) consumed by components/ui/* */
+  --background: var(--surface-ivory);
+  --foreground: var(--text-primary);
+  --card: var(--surface-white);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-white);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand-gold);
+  --primary-hover: var(--brand-gold-hover);
+  --primary-foreground: #fefcf9;
+  --secondary: #efe9df;
+  --secondary-foreground: var(--text-primary);
+  --muted: #efe9df;
+  --muted-foreground: var(--text-secondary);
+  --accent: #f1e6d2;
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--status-error);
+  --destructive-foreground: #fefcf9;
+  --success: var(--status-success);
+  --success-foreground: #fefcf9;
+  --warning: var(--status-warning);
+  --warning-foreground: #fefcf9;
+  --info: var(--status-info);
+  --info-foreground: #fefcf9;
+  --border: var(--border-sand);
+  --input: var(--border-sand);
+  --ring: var(--brand-gold);
+  --radius: 0.5rem;
+
+  /* Sidebar / dashboard "workspace" chrome (Supplier/Admin) — UIUX #A.2 role tinting */
+  --sidebar: var(--surface-charcoal-deep);
+  --sidebar-foreground: var(--text-on-dark);
+  --sidebar-muted-foreground: #a89e8f;
+  --sidebar-border: #2a2620;
+  --sidebar-accent: #211e19;
+}
+
+@theme inline {
+  --font-display-ar: var(--font-noto-kufi-arabic);
+  --font-sans-ar: var(--font-ibm-plex-sans-arabic);
+  --font-display-en: var(--font-marcellus);
+  --font-sans-en: var(--font-inter);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "cv02",
+      "cv03",
+      "cv04",
+      "cv11";
+  }
+
+  /* Arabic (default, RTL) uses the Kufi/Plex Sans Arabic pairing;
+     English (LTR) swaps to the Marcellus/Inter pairing — UIUX #A.3/#A.4. */
+  :root {
+    --font-display: var(--font-display-ar);
+    --font-sans: var(--font-sans-ar);
+  }
+  html[lang="en"] {
+    --font-display: var(--font-display-en);
+    --font-sans: var(--font-sans-en);
+  }
+
+  body {
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+
+  .font-display {
+    font-family: var(--font-display), serif;
+  }
+}
