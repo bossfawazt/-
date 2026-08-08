@@ -1,8 +1,30 @@
-// Placeholder landing page — built out fully in Phase 6 (docs/UIUX-touq.md #C.1).
-export default function HomePage() {
+import { CategoryTiles } from "@/features/landing/components/category-tiles";
+import { CtaBanner } from "@/features/landing/components/cta-banner";
+import { FeaturedSuppliers } from "@/features/landing/components/featured-suppliers";
+import { Hero } from "@/features/landing/components/hero";
+import { HowItWorks } from "@/features/landing/components/how-it-works";
+import { Testimonials } from "@/features/landing/components/testimonials";
+import { ValueProps } from "@/features/landing/components/value-props";
+import { getPlatformStats } from "@/server/services/catalog.service";
+
+// Statically prerendered at build time (no per-request dynamic APIs used);
+// revalidate periodically so the stats/featured-suppliers band doesn't go
+// stale between deploys (docs/ARCHITECTURE-touq.md #15 cache-aside pattern).
+export const revalidate = 300;
+
+/** docs/UIUX-touq.md #C.1: full public landing page. */
+export default async function HomePage() {
+  const stats = await getPlatformStats();
+
   return (
-    <main className="flex flex-1 items-center justify-center p-10">
-      <p className="text-muted-foreground">توق — قيد الإنشاء (Phase 6)</p>
-    </main>
+    <>
+      <Hero supplierCount={stats.supplierCount} productCount={stats.productCount} cityCount={stats.cityCount} />
+      <ValueProps />
+      <CategoryTiles />
+      <FeaturedSuppliers />
+      <HowItWorks />
+      <Testimonials />
+      <CtaBanner />
+    </>
   );
 }
