@@ -28,6 +28,7 @@ export interface ProductListResult {
 
 export interface MarketplaceFilters {
   q?: string;
+  supplierId?: string;
   style?: string[];
   fabric?: string[];
   color?: string[];

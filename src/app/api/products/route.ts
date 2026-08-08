@@ -32,6 +32,7 @@ export async function GET(request: Request) {
     priceMaxMinor: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) * 100 : undefined,
     moqMax: searchParams.get("moqMax") ? Number(searchParams.get("moqMax")) : undefined,
     regionId: searchParams.get("region") ?? undefined,
+    supplierId: searchParams.get("supplierId") ?? undefined,
     minRating: searchParams.get("minRating") ? Number(searchParams.get("minRating")) : undefined,
     verifiedOnly: searchParams.get("verifiedOnly") === "true",
     inStockOnly: searchParams.get("inStockOnly") === "true",

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
 import { getProductById } from "@/server/services/catalog.service";
 import { RfqBuilderForm } from "@/features/rfq/components/rfq-builder-form";
 
@@ -27,6 +28,10 @@ export default async function NewRfqPage(props: PageProps<"/merchant/requests/ne
     const variant = product.variants.find((v) => v.id === variantId) ?? product.variants[0];
     variantLabel = variant ? [variant.color, variant.size].filter(Boolean).join(" / ") : undefined;
     minQty = qty ?? variant?.moq ?? 1;
+  } else if (supplierId) {
+    const supplier = await db.organization.findUnique({ where: { id: supplierId }, select: { legalNameAr: true } });
+    if (!supplier) redirect("/suppliers");
+    supplierName = supplier.legalNameAr;
   }
 
   if (!supplierId) redirect("/marketplace");

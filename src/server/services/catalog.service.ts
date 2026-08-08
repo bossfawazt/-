@@ -14,6 +14,7 @@ export interface ProductFilters {
   regionId?: string;
   minRating?: number;
   verifiedOnly?: boolean;
+  supplierId?: string;
   inStockOnly?: boolean;
   sort?: "relevance" | "newest" | "price_asc" | "price_desc" | "rating";
   page?: number;
@@ -59,6 +60,7 @@ export async function getProducts(filters: ProductFilters) {
           }
         : {}),
       AND: attributeConditions,
+      ...(filters.supplierId ? { supplierId: filters.supplierId } : {}),
       supplier: {
         status: "ACTIVE",
         ...(filters.verifiedOnly ? { verificationStatus: "VERIFIED" } : {}),

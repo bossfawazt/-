@@ -23,6 +23,7 @@ export const site = {
 /** docs/UIUX-touq.md #B.1: public header nav links. */
 export const publicNav = [
   { label: "السوق", href: "/marketplace" },
+  { label: "الموردون", href: "/suppliers" },
   { label: "كيف تعمل المنصة", href: "/#how-it-works" },
 ];
 
