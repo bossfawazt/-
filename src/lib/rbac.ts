@@ -31,6 +31,7 @@ export const PERMISSIONS = {
   ORDER_MANAGE_STATUS: "order.manage_status",
   REVIEW_WRITE: "review.write",
   ORG_VERIFY: "org.verify",
+  ORG_MANAGE_PROFILE: "org.manage_profile",
   ORG_MANAGE_STAFF: "org.manage_staff",
   DISPUTE_RESOLVE: "dispute.resolve",
   PLATFORM_CONFIG: "platform.config",
@@ -56,6 +57,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, PermissionKey[]> = {
     PERMISSIONS.ORDER_VIEW,
     PERMISSIONS.ORDER_MANAGE_STATUS,
     PERMISSIONS.REVIEW_WRITE,
+    PERMISSIONS.ORG_MANAGE_PROFILE,
     PERMISSIONS.ORG_MANAGE_STAFF,
   ],
   [ROLES.ORG_STAFF]: [

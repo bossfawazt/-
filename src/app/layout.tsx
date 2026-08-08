@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import { fontVariables } from "@/config/fonts";
 import { QueryProvider } from "@/providers/query-provider";
+import { SessionProvider } from "@/providers/session-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,18 +23,20 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ar" dir="rtl" className={`${fontVariables} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <QueryProvider>
-          {children}
-          <Toaster
-            position="top-center"
-            dir="rtl"
-            toastOptions={{
-              classNames: {
-                toast: "font-sans",
-              },
-            }}
-          />
-        </QueryProvider>
+        <SessionProvider>
+          <QueryProvider>
+            {children}
+            <Toaster
+              position="top-center"
+              dir="rtl"
+              toastOptions={{
+                classNames: {
+                  toast: "font-sans",
+                },
+              }}
+            />
+          </QueryProvider>
+        </SessionProvider>
       </body>
     </html>
   );
