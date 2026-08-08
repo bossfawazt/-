@@ -284,12 +284,17 @@ model AttributeOption {
   id                    String              @id @default(uuid(7))
   attributeDefinitionId String              @map("attribute_definition_id")
   attributeDefinition   AttributeDefinition @relation(fields: [attributeDefinitionId], references: [id], onDelete: Cascade)
+  /// Stable, URL-friendly slug (e.g. "open_farasha") — lets Marketplace
+  /// filters and links (Landing's category tiles) reference a readable,
+  /// stable value instead of the UUID id.
+  key                   String
   valueAr               String              @map("value_ar")
   valueEn               String              @map("value_en")
   sortOrder             Int                 @default(0) @map("sort_order")
 
   productValues ProductAttributeValue[]
 
+  @@unique([attributeDefinitionId, key])
   @@map("attribute_options")
 }
 

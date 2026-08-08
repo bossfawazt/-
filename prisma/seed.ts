@@ -101,6 +101,7 @@ async function seedTaxonomy() {
       const optionRecord = await db.attributeOption.create({
         data: {
           attributeDefinitionId: definition.id,
+          key: option.key,
           valueAr: option.valueAr,
           valueEn: option.valueEn,
           sortOrder: optIndex,
