@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useCategoriesQuery } from "@/features/marketplace/hooks";
 import { useCreateProductMutation, useUpdateProductMutation } from "@/features/catalog/hooks";
+import { useAnalyzeProductImageMutation } from "@/features/ai/hooks";
 import { MediaField } from "@/features/catalog/components/media-field";
 import { VariantField } from "@/features/catalog/components/variant-field";
 import { productFormSchema, type ProductFormInput } from "@/lib/validations/product";
@@ -32,7 +34,7 @@ interface ProductFormProps {
   defaultValues?: Partial<ProductFormInput>;
 }
 
-/** docs/UIUX-touq.md #C.8: create/edit product form — AI Product Creator (docs/AI-SYSTEM-touq.md #3.1) is a future accelerator on top of this same form/schema. */
+/** docs/UIUX-touq.md #C.8: create/edit product form. AI Product Creator (docs/AI-SYSTEM-touq.md #3.1, Phase 13) analyzes the primary image and prefills fields below via setValue — nothing saves until the supplier reviews and submits normally. */
 export function ProductForm({ productId, defaultValues }: ProductFormProps) {
   const router = useRouter();
   const { data: attributeDefs, isLoading: attributesLoading } = useCategoriesQuery();
@@ -56,6 +58,25 @@ export function ProductForm({ productId, defaultValues }: ProductFormProps) {
   });
 
   const variantsArray = useFieldArray({ control: form.control, name: "variants" });
+  const analyzeImage = useAnalyzeProductImageMutation();
+  const media = useWatch({ control: form.control, name: "media" });
+  const primaryImage = media.find((m) => m.isPrimary) ?? media[0];
+
+  async function handleAnalyze() {
+    if (!primaryImage) return;
+    try {
+      const { suggestion } = await analyzeImage.mutateAsync(primaryImage.url);
+      form.setValue("titleAr", suggestion.titleAr, { shouldDirty: true });
+      form.setValue("titleEn", suggestion.titleEn, { shouldDirty: true });
+      form.setValue("descriptionAr", suggestion.descriptionAr, { shouldDirty: true });
+      for (const [key, value] of Object.entries(suggestion.attributes)) {
+        form.setValue(`attributes.${key as keyof ProductFormInput["attributes"]}`, value, { shouldDirty: true });
+      }
+      toast.success(`تم إنشاء اقتراح بدقة تقديرية ${Math.round(suggestion.confidence * 100)}% — راجعه وعدّله قبل الحفظ`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر تحليل الصورة");
+    }
+  }
 
   async function onSubmit(values: ProductFormInput) {
     try {
@@ -162,6 +183,22 @@ export function ProductForm({ productId, defaultValues }: ProductFormProps) {
         </div>
 
         <MediaField />
+
+        {primaryImage ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+            <Sparkles className="size-5 shrink-0 text-primary" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">تحليل المنتج بالذكاء الاصطناعي</p>
+              <p className="text-xs text-muted-foreground">
+                يقترح النظام العنوان والوصف والمواصفات من الصورة الرئيسية — قابلة للتعديل الكامل قبل الحفظ.{" "}
+                <Badge variant="gold" className="align-middle">Mock AI</Badge>
+              </p>
+            </div>
+            <Button type="button" variant="secondary" size="sm" onClick={handleAnalyze} loading={analyzeImage.isPending}>
+              <Sparkles className="size-4" /> تحليل بالذكاء الاصطناعي
+            </Button>
+          </div>
+        ) : null}
 
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">

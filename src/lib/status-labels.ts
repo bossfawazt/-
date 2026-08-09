@@ -1,5 +1,6 @@
 import type { BadgeProps } from "@/components/ui/badge";
 import type {
+  AiJobStatus,
   DisputeStatus,
   OrderStatus,
   ProductStatus,
@@ -52,6 +53,13 @@ export const VERIFICATION_STATUS_META: Record<VerificationStatus, StatusMeta> = 
   PENDING: { labelAr: "قيد المراجعة", labelEn: "Pending", variant: "warning" },
   VERIFIED: { labelAr: "موثّق", labelEn: "Verified", variant: "success" },
   REJECTED: { labelAr: "مرفوض", labelEn: "Rejected", variant: "destructive" },
+};
+
+export const AI_JOB_STATUS_META: Record<AiJobStatus, StatusMeta> = {
+  QUEUED: { labelAr: "في الانتظار", labelEn: "Queued", variant: "default" },
+  PROCESSING: { labelAr: "قيد المعالجة", labelEn: "Processing", variant: "info" },
+  COMPLETED: { labelAr: "مكتمل", labelEn: "Completed", variant: "success" },
+  FAILED: { labelAr: "فشل", labelEn: "Failed", variant: "destructive" },
 };
 
 export const DISPUTE_STATUS_META: Record<DisputeStatus, StatusMeta> = {

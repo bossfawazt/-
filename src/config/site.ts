@@ -11,6 +11,7 @@ import {
   Settings,
   ShieldCheck,
   ShoppingBag,
+  Sparkles,
   Store,
   Users,
 } from "lucide-react";
@@ -56,6 +57,7 @@ export const supplierNav: NavItem[] = [
   { label: "منتجاتي", href: "/supplier/products", icon: Package },
   { label: "طلبات الشراء الواردة", href: "/supplier/rfqs", icon: MessageSquareText },
   { label: "الطلبات", href: "/supplier/orders", icon: ShoppingBag },
+  { label: "أدوات الذكاء الاصطناعي", href: "/supplier/ai", icon: Sparkles },
   { label: "الإشعارات", href: "/notifications", icon: Bell },
   { label: "الإعدادات", href: "/settings", icon: Settings },
 ];

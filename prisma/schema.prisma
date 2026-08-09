@@ -128,6 +128,7 @@ model Organization {
   reviewsReceived       Review[]               @relation("ReviewSupplier")
   favoritedSuppliers    Favorite[]             @relation("FavoriteMerchant")
   favoritedByMerchants  Favorite[]             @relation("FavoriteSupplier")
+  aiJobs                AiJob[]
 
   @@map("organizations")
 }
@@ -681,4 +682,59 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// AI Supplier Tools (docs/AI-SYSTEM-touq.md) — generic job/result pair used
+// by every AI tool (Product Creator, Image Studio, Catalog Scanner, Bulk
+// Import, Marketing Kit) so a new tool only needs a new AiJobType, not a new
+// table. Backed by a swappable provider (src/server/ai/provider.ts); a Mock
+// implementation runs today, a real API can replace it without touching
+// this schema.
+// ---------------------------------------------------------------------------
+
+enum AiJobType {
+  PRODUCT_CREATOR
+  IMAGE_STUDIO
+  CATALOG_SCANNER
+  BULK_IMPORT
+  MARKETING_KIT
+}
+
+enum AiJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model AiJob {
+  id           String      @id @default(uuid(7))
+  supplierId   String      @map("supplier_id")
+  supplier     Organization @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  type         AiJobType
+  status       AiJobStatus @default(QUEUED)
+  provider     String      @default("mock")
+  inputJson    Json?       @map("input_json")
+  errorMessage String?     @map("error_message")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  results AiResult[]
+
+  @@index([supplierId, type])
+  @@map("ai_jobs")
+}
+
+/** kind: "product_draft" | "image_variant" | "marketing_asset" — dataJson shape depends on kind. */
+model AiResult {
+  id        String   @id @default(uuid(7))
+  jobId     String   @map("job_id")
+  job       AiJob    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  kind      String
+  dataJson  Json     @map("data_json")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([jobId])
+  @@map("ai_results")
 }

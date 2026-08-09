@@ -52,6 +52,23 @@ export const ourFileRouter = {
       // (Phase 8's product form calls the products API with this URL).
       return { url: file.ufsUrl };
     }),
+
+  /** AI Catalog Scanner (Phase 13): images, PDFs, or a zipped batch of photos. */
+  catalogSourceFile: f({
+    image: { maxFileSize: "8MB", maxFileCount: 10 },
+    pdf: { maxFileSize: "16MB", maxFileCount: 5 },
+    blob: { maxFileSize: "32MB", maxFileCount: 3 },
+  })
+    .middleware(async () => {
+      const session = await requireOrgSession();
+      if (session.user.organization!.type !== "SUPPLIER") {
+        throw new UploadThingError("Only suppliers can upload catalog files");
+      }
+      return { organizationId: session.user.organization!.id };
+    })
+    .onUploadComplete(async ({ file }) => {
+      return { url: file.ufsUrl, name: file.name };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

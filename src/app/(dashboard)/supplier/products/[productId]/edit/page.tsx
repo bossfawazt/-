@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { ProductNotFoundError, getSupplierProductById } from "@/server/services/product.service";
 import { ProductForm } from "@/features/catalog/components/product-form";
+import { MarketingKitPanel } from "@/features/ai/components/marketing-kit-panel";
 import type { ProductFormInput } from "@/lib/validations/product";
 
 export const metadata: Metadata = { title: "تعديل المنتج" };
@@ -48,6 +49,9 @@ export default async function EditSupplierProductPage(props: PageProps<"/supplie
   return (
     <div className="mx-auto max-w-3xl p-6">
       <h1 className="mb-6 text-xl font-semibold text-foreground">تعديل المنتج</h1>
+      <div className="mb-6">
+        <MarketingKitPanel productId={productId} />
+      </div>
       <ProductForm productId={productId} defaultValues={defaultValues} />
     </div>
   );
