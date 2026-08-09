@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart3,
   Bell,
   Boxes,
   Building2,
@@ -64,6 +65,8 @@ export const adminNav: NavItem[] = [
   { label: "طلبات التوثيق", href: "/admin/verification", icon: ShieldCheck },
   { label: "مراجعة المنتجات", href: "/admin/moderation", icon: Boxes },
   { label: "المستخدمون والمنشآت", href: "/admin/organizations", icon: Users },
+  { label: "الطلبات والنزاعات", href: "/admin/orders", icon: ShoppingBag },
+  { label: "التقارير", href: "/admin/reports", icon: BarChart3 },
 ];
 
 /** Bottom tab bar for Merchant/Supplier on mobile (docs/UIUX-touq.md #B.3) — 5 items max. */
