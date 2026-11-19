@@ -4,7 +4,7 @@ import * as React from "react";
 import { OTPInput, OTPInputContext } from "input-otp";
 import { cn } from "@/lib/utils";
 
-/** docs/UIUX-touq.md #A.6 OTP Input: 6-segment, auto-advance, error/success states. */
+/** OTP Input: 6-segment, auto-advance, error/success states. */
 const InputOTP = React.forwardRef<React.ComponentRef<typeof OTPInput>, React.ComponentPropsWithoutRef<typeof OTPInput>>(
   ({ className, containerClassName, ...props }, ref) => (
     <OTPInput

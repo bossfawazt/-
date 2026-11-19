@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * docs/UIUX-touq.md #A.6 Button component: Primary (solid gold), Secondary
+ * Button: Primary (deep green), Secondary
  * (outline charcoal), Tertiary (text link), Icon, Destructive — with
  * default/hover/active/focus/disabled/loading states.
  */
@@ -14,7 +14,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover",
+        primary: "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover active:translate-y-px",
         secondary:
           "border border-foreground/60 bg-transparent text-foreground hover:bg-secondary",
         tertiary: "text-primary underline-offset-4 hover:underline",
@@ -23,9 +23,9 @@ const buttonVariants = cva(
         icon: "text-foreground hover:bg-secondary",
       },
       size: {
-        default: "h-10 px-5 py-2",
+        default: "h-11 px-5 py-2",
         sm: "h-9 rounded-md px-3.5",
-        lg: "h-12 rounded-md px-7 text-base",
+        lg: "h-13 rounded-lg px-8 text-base",
         icon: "h-10 w-10",
       },
     },

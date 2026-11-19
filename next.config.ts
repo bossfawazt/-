@@ -1,15 +1,23 @@
 import type { NextConfig } from "next";
 
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(self)" },
+  // HSTS: يُفعّل HTTPS فقط على المتصفح في الإنتاج
+  ...(process.env.NODE_ENV === "production"
+    ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]
+    : []),
+];
+
 const nextConfig: NextConfig = {
-  images: {
-    // placehold.co: dev-only stand-in for product photos until AI Image
-    // Studio / UploadThing uploads are live (docs/AI-SYSTEM-touq.md #3.2).
-    // *.ufs.sh / *.utfs.io: UploadThing's serving domains for real uploads.
-    remotePatterns: [
-      { protocol: "https", hostname: "placehold.co" },
-      { protocol: "https", hostname: "*.ufs.sh" },
-      { protocol: "https", hostname: "*.utfs.io" },
-    ],
+  poweredByHeader: false,
+  experimental: {
+    serverActions: { bodySizeLimit: "2mb" },
+  },
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
   },
 };
 

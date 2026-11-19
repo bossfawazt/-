@@ -7,10 +7,10 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * docs/UIUX-touq.md #A.4: drawers/side panels open from the leading edge of
+ * Drawers/side panels open from the leading edge of
  * reading direction — the *start* edge (right in RTL, left in LTR) by
  * default. `side="bottom"` is used for the mobile filter bottom-sheet
- * (docs/UIUX-touq.md #C.2).
+ * sheet.
  */
 
 const Sheet = DialogPrimitive.Root;

@@ -1,69 +1,55 @@
 @import "tailwindcss";
 
 /*
- * Design tokens — mirrors docs/UIUX-touq.md Part A (design foundations).
- * Semantic slot names (background/foreground/primary/...) follow the
- * shadcn/ui convention so every hand-built primitive in components/ui
- * stays reskinnable from this single file.
+ * هوية معمار المنزل — رموز التصميم
+ * عاجي دافئ + بيج + رمادي حجري + أخضر داكن للتفاصيل + بني هادئ كلون مساعد.
+ * أسماء الفتحات الدلالية (background/primary/...) متوافقة مع مكونات components/ui.
  */
 :root {
-  /* Brand palette (UIUX #A.2) */
-  --surface-ivory: #f8f4ee;
-  --surface-white: #ffffff;
-  --surface-charcoal-deep: #14120f;
-  --text-primary: #201d1a;
-  --text-secondary: #5c564e;
-  --text-on-dark: #f3efe8;
-  --brand-gold: #a9782e;
-  --brand-gold-hover: #8a611f;
-  --border-sand: #e6ded0;
-  --status-success: #6b8f71;
-  --status-warning: #c08a3e;
-  --status-error: #b5533c;
-  --status-info: #5a7a94;
+  --ivory: #faf8f4;
+  --ivory-deep: #f3efe7;
+  --sand: #e9e1d3;
+  --sand-line: #e4dccd;
+  --stone: #8c877e;
+  --ink: #1f2420;
+  --ink-soft: #545a54;
+  --green: #2f4a3e;
+  --green-hover: #243a30;
+  --green-tint: #e6ece7;
+  --walnut: #8b6b4a;
+  --walnut-tint: #f2ebe2;
 
-  /* Semantic slots (shadcn-compatible) consumed by components/ui/* */
-  --background: var(--surface-ivory);
-  --foreground: var(--text-primary);
-  --card: var(--surface-white);
-  --card-foreground: var(--text-primary);
-  --popover: var(--surface-white);
-  --popover-foreground: var(--text-primary);
-  --primary: var(--brand-gold);
-  --primary-hover: var(--brand-gold-hover);
-  --primary-foreground: #fefcf9;
-  --secondary: #efe9df;
-  --secondary-foreground: var(--text-primary);
-  --muted: #efe9df;
-  --muted-foreground: var(--text-secondary);
-  --accent: #f1e6d2;
-  --accent-foreground: var(--text-primary);
-  --destructive: var(--status-error);
-  --destructive-foreground: #fefcf9;
-  --success: var(--status-success);
-  --success-foreground: #fefcf9;
-  --warning: var(--status-warning);
-  --warning-foreground: #fefcf9;
-  --info: var(--status-info);
-  --info-foreground: #fefcf9;
-  --border: var(--border-sand);
-  --input: var(--border-sand);
-  --ring: var(--brand-gold);
-  --radius: 0.5rem;
-
-  /* Sidebar / dashboard "workspace" chrome (Supplier/Admin) — UIUX #A.2 role tinting */
-  --sidebar: var(--surface-charcoal-deep);
-  --sidebar-foreground: var(--text-on-dark);
-  --sidebar-muted-foreground: #a89e8f;
-  --sidebar-border: #2a2620;
-  --sidebar-accent: #211e19;
+  --background: var(--ivory);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--green);
+  --primary-hover: var(--green-hover);
+  --primary-foreground: #fbfaf6;
+  --secondary: var(--ivory-deep);
+  --secondary-foreground: var(--ink);
+  --muted: var(--ivory-deep);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--walnut-tint);
+  --accent-foreground: var(--ink);
+  --destructive: #a5432f;
+  --destructive-foreground: #fffaf6;
+  --success: #4f7a5c;
+  --success-foreground: #ffffff;
+  --warning: #b07a2f;
+  --warning-foreground: #ffffff;
+  --info: #4d6b80;
+  --info-foreground: #ffffff;
+  --border: var(--sand-line);
+  --input: #dcd3c3;
+  --ring: var(--green);
+  --radius: 0.75rem;
 }
 
 @theme inline {
-  --font-display-ar: var(--font-noto-kufi-arabic);
-  --font-sans-ar: var(--font-ibm-plex-sans-arabic);
-  --font-display-en: var(--font-marcellus);
-  --font-sans-en: var(--font-inter);
+  --font-sans: var(--font-plex-arabic), ui-sans-serif, system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -92,48 +78,79 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sand: var(--sand);
+  --color-stone: var(--stone);
+  --color-walnut: var(--walnut);
+  --color-green-tint: var(--green-tint);
 
-  --radius-sm: calc(var(--radius) - 0.25rem);
-  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-sm: calc(var(--radius) - 0.375rem);
+  --radius-md: calc(var(--radius) - 0.25rem);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 0.25rem);
+  --radius-2xl: calc(var(--radius) + 0.75rem);
+
+  --spacing-13: 3.25rem;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
-
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings:
-      "cv02",
-      "cv03",
-      "cv04",
-      "cv11";
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: 1.7;
   }
+  h1,
+  h2,
+  h3 {
+    line-height: 1.35;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--green-tint);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
 
-  /* Arabic (default, RTL) uses the Kufi/Plex Sans Arabic pairing;
-     English (LTR) swaps to the Marcellus/Inter pairing — UIUX #A.3/#A.4. */
-  :root {
-    --font-display: var(--font-display-ar);
-    --font-sans: var(--font-sans-ar);
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 76rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
   }
-  html[lang="en"] {
-    --font-display: var(--font-display-en);
-    --font-sans: var(--font-sans-en);
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
   }
-
-  body {
-    font-family: var(--font-sans), system-ui, sans-serif;
-  }
-
-  .font-display {
-    font-family: var(--font-display), serif;
+  .eyebrow {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--walnut);
   }
 }

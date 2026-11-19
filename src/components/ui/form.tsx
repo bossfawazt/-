@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
  * FormProvider, <FormField> wraps Controller and exposes the field's id/
  * error state via context to <FormLabel>/<FormControl>/<FormMessage> so
  * every form field gets consistent labeling, a11y wiring, and error display
- * for free (docs/UIUX-touq.md #C.14 field-level error pattern).
+ * for free (field-level error pattern).
  */
 
 const Form = FormProvider;

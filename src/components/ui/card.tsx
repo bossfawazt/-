@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-/** docs/UIUX-touq.md #A.6 Card: default / hover (gentle lift) / selected / skeleton. */
+/** Card: default / hover (gentle lift) / selected / skeleton. */
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div

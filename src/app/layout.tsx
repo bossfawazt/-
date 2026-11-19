@@ -1,42 +1,39 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import { Toaster } from "sonner";
-import { fontVariables } from "@/config/fonts";
-import { QueryProvider } from "@/providers/query-provider";
-import { SessionProvider } from "@/providers/session-provider";
+import { siteConfig } from "@/config/site";
+import { publicEnv } from "@/lib/env";
 import "./globals.css";
 
+const plexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plex-arabic",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: {
-    default: "توق | Touq — سوق الجملة للعبايات",
-    template: "%s | توق",
-  },
-  description:
-    "منصة B2B تربط موردي العبايات بالتجار الإلكترونيين في المملكة العربية السعودية.",
+  metadataBase: new URL(publicEnv.siteUrl),
+  title: { default: `${siteConfig.name} | ${siteConfig.tagline}`, template: `%s | ${siteConfig.name}` },
+  description: siteConfig.description,
+  openGraph: { title: siteConfig.name, description: siteConfig.description, locale: "ar_SA", type: "website" },
 };
 
-/**
- * Arabic is the default, native locale (docs/UIUX-touq.md #A.4) — the
- * document renders RTL out of the box. English is the mirrored, secondary
- * experience, switched via the language toggle (see components/layout).
- */
+export const viewport: Viewport = {
+  themeColor: "#faf8f4",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ar" dir="rtl" className={`${fontVariables} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-background text-foreground">
-        <SessionProvider>
-          <QueryProvider>
-            {children}
-            <Toaster
-              position="top-center"
-              dir="rtl"
-              toastOptions={{
-                classNames: {
-                  toast: "font-sans",
-                },
-              }}
-            />
-          </QueryProvider>
-        </SessionProvider>
+    <html lang="ar" dir="rtl" className={`${plexArabic.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-card focus:px-4 focus:py-2">
+          تخطَّ إلى المحتوى
+        </a>
+        {children}
+        <Toaster position="top-center" dir="rtl" toastOptions={{ classNames: { toast: "font-sans" } }} />
       </body>
     </html>
   );

@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# معمار المنزل
 
-## Getting Started
+**صمّم منزلك قبل أن تنفذه** — منصة عربية تربط العملاء بمصانع المطابخ في الرياض: تصميم أولي بالذكاء الاصطناعي، سعر مبدئي من قاعدة أسعار فعلية، معاينة وقياس من فني، ثم عرض سعر نهائي من المصنع ومتابعة حتى التركيب.
 
-First, run the development server:
+المنصة وسيط إلكتروني فقط: لا تملك مصنعاً ولا مخزوناً، ولا تحتفظ بأموال العملاء.
+
+---
+
+## التقنيات
+
+| الطبقة | التقنية |
+|---|---|
+| الواجهة والخادم | Next.js 16 (App Router، Server Actions، `proxy.ts`) + TypeScript + React 19 |
+| التصميم | Tailwind CSS 4 + مكونات Radix، خط IBM Plex Sans Arabic، اتجاه RTL |
+| قاعدة البيانات | Supabase PostgreSQL مع Row Level Security على كل الجداول |
+| الدخول | Supabase Auth (رقم الجوال + رمز OTP) |
+| التخزين | Supabase Storage (حاويات خاصة وروابط موقعة) |
+| الاختبارات | Vitest (منطق التطبيق) + اختبارات SQL للصلاحيات + Playwright (يدوي حالياً) |
+
+## تشغيل المشروع محلياً
+
+المتطلبات: Node.js 20+، pnpm 10، وDocker (لتشغيل Supabase محلياً).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm exec supabase start          # يشغل Supabase محلياً ويطبق migrations وبيانات الاختبار
+cp .env.example .env.local        # ثم ضع القيم التي يطبعها الأمر السابق
+pnpm dev                          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+قيم `.env.local` المحلية: `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`، والمفتاحان `PUBLISHABLE_KEY` و`SECRET_KEY` كما يطبعهما `supabase start` (أو `pnpm exec supabase status`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### الدخول محلياً دون رسائل حقيقية
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **أرقام اختبار:** `0500000001` و`0500000002`، والرمز `123456` (معرّفة في `supabase/config.toml`، محلياً فقط). يتطلب ملف `supabase/.env` يحتوي `SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN=local-test-only` (قيمة وهمية؛ لا تُرسل رسائل).
+- **دخول الاختبار بالأدوار:** ضع `ENABLE_DEV_LOGIN=true` في `.env.local` فتظهر في صفحة الدخول أزرار لكل دور (مدير، عميل، مصنع...). **لا يعمل في الإنتاج إطلاقاً**: الشرط يتطلب `NODE_ENV !== "production"`، وأي نشر على Vercel يعمل بوضع production.
 
-## Learn More
+### الأوامر
 
-To learn more about Next.js, take a look at the following resources:
+| الأمر | الوظيفة |
+|---|---|
+| `pnpm dev` | خادم التطوير |
+| `pnpm build` / `pnpm start` | بناء وتشغيل نسخة الإنتاج |
+| `pnpm lint` / `pnpm typecheck` | الفحص الثابت |
+| `pnpm test` | اختبارات الوحدات (Vitest) |
+| `pnpm db:test` | تطبيق كل migrations على PostgreSQL مؤقت + اختبارات RLS (يتطلب `psql`؛ استخدم `PGTEST_SUDO=1` إن كان المستخدم `postgres` يتطلب sudo) |
+| `pnpm db:types` | توليد أنواع TypeScript من قاعدة البيانات المربوطة |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## إعداد Supabase للإنتاج
 
-## Deploy on Vercel
+1. أنشئ مشروعاً في [supabase.com](https://supabase.com). يُنصح باختيار منطقة قريبة من السعودية، مع مراجعة متطلبات نظام حماية البيانات الشخصية بشأن مكان تخزين البيانات.
+2. اربط المشروع وطبّق قاعدة البيانات:
+   ```bash
+   pnpm exec supabase login
+   pnpm exec supabase link --project-ref <PROJECT_REF>
+   pnpm exec supabase db push        # يطبق كل الملفات في supabase/migrations
+   ```
+   ملف `supabase/seed.sql` (بيانات الاختبار) **لا يُرفع** مع `db push`، فهو للبيئة المحلية فقط.
+3. من **Project Settings → API Keys** انسخ `URL` والمفتاح العام (publishable) والمفتاح السري (secret) إلى متغيرات البيئة.
+4. **الدخول بالجوال:** من **Authentication → Sign In / Providers → Phone** فعّل Phone واختر مزود الرسائل (Twilio أو Vonage أو MessageBird أو Textlocal). لاستخدام مزود سعودي غير مدرج، استخدم **Send SMS Hook** في Supabase لتوجيه الرسائل إلى مزودك. تأكد من موافقة المزود على إرسال رسائل التحقق لأرقام السعودية (تسجيل اسم المرسل لدى الجهات المختصة).
+5. من **Authentication → URL Configuration** اضبط `Site URL` على نطاق الموقع.
+6. أنشئ أول مدير: سجّل الدخول برقم جوالك، ثم نفّذ في **SQL Editor**:
+   ```sql
+   update public.profiles set role = 'admin' where phone = '9665XXXXXXXX';
+   ```
+   (Supabase يخزن الرقم بدون علامة +.) بعدها يُدار باقي المستخدمين والأدوار من لوحة الإدارة عند اكتمالها.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## migrations
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+الملفات في `supabase/migrations` مرتبة زمنياً:
+
+| الملف | المحتوى |
+|---|---|
+| `…0100_foundation` | المخطط `private`، كل الأنواع (الأدوار، 16 حالة للطلب، حالات المواعيد...) |
+| `…0200_identity` | `profiles`، العناوين، الإعدادات (العمولة 12%، الضريبة 15%، حدود AI)، الإشعارات، سجل العمليات، دوال الصلاحيات |
+| `…0300_catalog_manufacturers` | خيارات التصميم، الخامات، المنتجات، الأجهزة، المصانع، أسعار المصانع، الفنيون |
+| `…0400_projects_design` | المشاريع، الصور، المقاسات، جلسات التصميم وعناصرها، التصاميم المولدة |
+| `…0500_operations` | المواعيد، الطلبات، سجل حالات الطلب (تلقائي)، الإسناد للمصانع، عروض الأسعار وبنودها، دالة رد العميل على العرض |
+| `…0600_finance_support` | المدفوعات، العمولات، التسويات، الفواتير، الضمانات، الشكاوى والردود، رسائل التواصل |
+| `…0700_rls` | تفعيل RLS على كل الجداول وجميع السياسات |
+| `…0800_storage` | الحاويات الخاصة وسياسات الملفات |
+| `…0900_catalog_defaults` | الأنماط والألوان والخامات والأجهزة الافتراضية (**بدون أسعار**) |
+
+لإضافة تعديل جديد: `pnpm exec supabase migration new <name>`، ثم اختبره بـ `pnpm db:test` و`pnpm exec supabase db reset`، ثم `db push`.
+
+> جدول `users` في المتطلبات اسمه هنا `profiles` (مرتبط واحد لواحد مع `auth.users` الخاص بـ Supabase) لتجنب الالتباس.
+
+### نموذج الصلاحيات
+
+- الدور مخزن في `profiles.role` ولا يستطيع المستخدم تغييره (مشغل قاعدة بيانات يمنع ذلك). كل مستخدم جديد يبدأ عميلاً.
+- **العميل:** بياناته ومشاريعه وصوره فقط. **المصنع:** المشاريع والطلبات المسندة إليه وأسعاره. **الفني:** مواعيده ومشاريعها، ويسجل المقاسات النهائية. **الدعم:** العمليات دون المالية الحساسة. **المحاسب:** المالية دون صور العملاء. **المدير:** الكل.
+- التصاميم المولدة والإشعارات وسجل العمليات تُكتب من الخادم فقط.
+- `supabase/tests/rls.test.sql` يتحقق من كل ما سبق (44 اختباراً).
+
+## إضافة مصنع وأسعاره
+
+واجهة إدارة المصانع والأسعار ضمن **المرحلة الرابعة**. إلى حينها تتم الإضافة من **Table Editor** في Supabase:
+
+1. جدول `manufacturers`: أضف المصنع (الاسم التجاري، رقم التواصل، `partnership_status = 'active'`). اترك `commission_rate` فارغاً لاستخدام النسبة الافتراضية (12%) أو ضع نسبة الاتفاقية. ليظهر في قسم «المصانع الشريكة» بالصفحة الرئيسية اجعل `is_public = true`.
+2. جدول `manufacturer_prices`: سطر لكل بند، مع `item_type` (material / product / appliance / option / service) ومعرّف العنصر المناسب ووحدة التسعير (`linear_meter` متر طولي، `square_meter` متر مربع، `unit` وحدة، `fixed` ثابت، `appliance` جهاز، `installation` تركيب، `extra` إضافي) و`price_min` / `price_max` بالريال.
+3. لربط حساب دخول للمصنع: `update profiles set role = 'manufacturer', manufacturer_id = '<id>' where phone = '...'`.
+
+**لا تُدخل أسعاراً تقديرية من عندك.** محرك التسعير (المرحلة الرابعة) لن يعرض سعراً مبدئياً إذا كانت الأسعار غير كافية.
+
+## مفاتيح الذكاء الاصطناعي
+
+خدمة توليد التصاميم مخططة في **المرحلة الثالثة** كطبقة مزود قابلة للتبديل تُستدعى من الخادم فقط. عند عدم ضبط `AI_IMAGE_PROVIDER` ومفتاحه ستعرض المنصة رسالة «الخدمة تحتاج إلى إعداد» ولن تعرض صوراً وهمية. سيُحدَّث هذا القسم بخطوات الإعداد عند تنفيذها.
+
+## النشر (Vercel)
+
+1. استورد المستودع في Vercel (الإطار Next.js يُكتشف تلقائياً).
+2. أضف متغيرات البيئة من `.env.example` (لا تضف `ENABLE_DEV_LOGIN`).
+3. اربط النطاق؛ HTTPS تلقائي، ورأس HSTS مفعّل في الإنتاج من `next.config.ts`.
+4. حدّث `Site URL` في Supabase بالنطاق النهائي.
+
+> النشر العام والإطلاق التجاري يتمان فقط بعد موافقة المالك ومراجعة السياسات قانونياً.
+
+## النسخ الاحتياطي
+
+- **Supabase:** الخطط المدفوعة توفر نسخاً يومية تلقائية، وإضافة **Point-in-Time Recovery** للاستعادة لأي لحظة. يُنصح بتفعيلها قبل الإطلاق.
+- **نسخة يدوية إضافية** (مثلاً أسبوعياً، تُحفظ في مكان منفصل ومشفر):
+  ```bash
+  pnpm exec supabase db dump --linked -f backup-schema.sql
+  pnpm exec supabase db dump --linked --data-only -f backup-data.sql
+  ```
+- ملفات Storage لا تشملها نسخ قاعدة البيانات؛ انسخها دورياً عبر واجهة S3 الخاصة بـ Supabase Storage.
+- جرّب الاستعادة على مشروع منفصل مرة كل فترة؛ النسخة غير المجربة لا يُعتمد عليها.
+
+## هيكل المشروع
+
+```
+src/
+  app/
+    (site)/         الصفحات العامة: الرئيسية، كيف تعمل، التصاميم، تواصل، السياسات
+    (auth)/login    الدخول بالجوال + OTP
+    (app)/          المسارات المحمية: حسابي، صمم مطبخك، لوحة الإدارة
+  components/       مكونات الهوية والتخطيط وعناصر الواجهة القابلة لإعادة الاستخدام
+  features/         منطق كل مجال (auth, projects, contact, home, admin...)
+  lib/              Supabase (client/server/admin/proxy)، الجلسة والصلاحيات، التحقق، التنسيق
+  types/            أنواع قاعدة البيانات المولدة والأدوار
+  proxy.ts          تحديث الجلسة وحماية المسارات
+supabase/
+  migrations/       مخطط قاعدة البيانات وRLS والتخزين
+  seed.sql          بيانات اختبار محلية (مميزة is_test_data)
+  tests/            اختبارات RLS على PostgreSQL
+```
+
+## حالة التنفيذ
+
+| المرحلة | الحالة |
+|---|---|
+| 1. الإعداد، الهوية، الصفحة الرئيسية، الدخول، Supabase | **منجزة ومختبرة** |
+| 2. قاعدة البيانات، الحسابات، المشاريع | المخطط الكامل وRLS منجزان؛ إنشاء المشروع منجز. رفع الصور والمقاسات متبقية |
+| 3. واجهة التصميم وخدمة AI | لم تبدأ |
+| 4. محرك التسعير والمنتجات والمصانع | الجداول جاهزة؛ الواجهات والمحرك متبقية |
+| 5. المعاينات والعروض والطلبات | الجداول ودالة قبول العرض وسجل الحالات جاهزة؛ الواجهات متبقية |
+| 6. لوحة الإدارة والتقارير والعمولات | المؤشرات الرئيسية منجزة؛ باقي الأقسام متبقية |
+| 7. الدفع والأمان النهائي والنشر | لم تبدأ — لا عمليات مالية حقيقية قبل اعتماد مزود دفع مرخص |

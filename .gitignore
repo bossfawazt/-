@@ -41,6 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma generated client (regenerated via `pnpm prisma:generate`)
-/src/generated
 
+# supabase local
+supabase/.temp
+supabase/.branches
