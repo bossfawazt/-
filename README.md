@@ -50,6 +50,12 @@ pnpm dev                          # http://localhost:3000
 
 ## إعداد Supabase للإنتاج
 
+**المشروع الحالي:** `mimar-almanzil` — المعرّف `fkerbldmqrsahnfdpkta` — المنطقة فرانكفورت (`eu-central-1`) — الرابط `https://fkerbldmqrsahnfdpkta.supabase.co`.
+طُبّقت عليه migrations التسعة (بدون بيانات الاختبار)، وسجل الإصدارات مطابق لأسماء الملفات في المستودع، فيعمل `supabase db push` لاحقاً للملفات الجديدة فقط.
+لربطه محلياً: `pnpm exec supabase link --project-ref fkerbldmqrsahnfdpkta`.
+
+خطوات إنشاء مشروع جديد من الصفر (للمرجع):
+
 1. أنشئ مشروعاً في [supabase.com](https://supabase.com). يُنصح باختيار منطقة قريبة من السعودية، مع مراجعة متطلبات نظام حماية البيانات الشخصية بشأن مكان تخزين البيانات.
 2. اربط المشروع وطبّق قاعدة البيانات:
    ```bash
