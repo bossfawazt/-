@@ -67,11 +67,17 @@ pnpm dev                          # http://localhost:3000
 3. من **Project Settings → API Keys** انسخ `URL` والمفتاح العام (publishable) والمفتاح السري (secret) إلى متغيرات البيئة.
 4. **الدخول بالجوال:** من **Authentication → Sign In / Providers → Phone** فعّل Phone واختر مزود الرسائل (Twilio أو Vonage أو MessageBird أو Textlocal). لاستخدام مزود سعودي غير مدرج، استخدم **Send SMS Hook** في Supabase لتوجيه الرسائل إلى مزودك. تأكد من موافقة المزود على إرسال رسائل التحقق لأرقام السعودية (تسجيل اسم المرسل لدى الجهات المختصة).
 5. من **Authentication → URL Configuration** اضبط `Site URL` على نطاق الموقع.
-6. أنشئ أول مدير: سجّل الدخول برقم جوالك، ثم نفّذ في **SQL Editor**:
+6. أنشئ أول مدير **قبل** أن يسجل دخوله، بتنفيذ هذا في **SQL Editor** (الرقم بصيغة 9665XXXXXXXX دون +):
+   ```sql
+   insert into private.pending_role_grants (phone, role, note)
+   values ('9665XXXXXXXX', 'admin', 'المدير الأول');
+   ```
+   عند أول دخول بهذا الرقم يُنشأ حسابه مديراً تلقائياً ويُسجل ذلك في سجل العمليات. المنح يُستهلك مرة واحدة، وأي رقم آخر يبدأ عميلاً.
+   إن كان صاحب الرقم مسجلاً من قبل، استخدم بدلاً من ذلك:
    ```sql
    update public.profiles set role = 'admin' where phone = '9665XXXXXXXX';
    ```
-   (Supabase يخزن الرقم بدون علامة +.) بعدها يُدار باقي المستخدمين والأدوار من لوحة الإدارة عند اكتمالها.
+   لا تُحفظ أرقام المديرين في المستودع.
 
 ## migrations
 

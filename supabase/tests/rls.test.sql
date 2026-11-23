@@ -231,4 +231,22 @@ do $$ begin
 end $$;
 rollback;
 
+-- ---------------------------------------------------------------------------
+-- 7) منح الدور المسبق برقم الجوال
+-- ---------------------------------------------------------------------------
+insert into private.pending_role_grants (phone, role) values ('966511111111', 'admin');
+insert into auth.users (id, phone) values ('88888888-8888-4888-8888-888888888888', '966511111111');
+insert into auth.users (id, phone) values ('99999999-9999-4999-8999-999999999999', '966522222222');
+select pg_temp.assert((select role = 'admin' from public.profiles where id = '88888888-8888-4888-8888-888888888888'), 'الرقم الممنوح مسبقاً يصبح مديراً عند أول دخول');
+select pg_temp.assert((select consumed_at is not null from private.pending_role_grants where phone = '966511111111'), 'المنح يُستهلك مرة واحدة');
+select pg_temp.assert((select role = 'customer' from public.profiles where id = '99999999-9999-4999-8999-999999999999'), 'أي رقم آخر يبقى عميلاً');
+begin;
+select pg_temp.act_as('11111111-1111-4111-8111-111111111111');
+do $$ begin
+  perform 1 from private.pending_role_grants;
+  raise exception 'فشل الاختبار: مستخدم قرأ جدول المنح';
+exception when insufficient_privilege then raise notice 'ok: جدول المنح غير متاح للمستخدمين';
+end $$;
+rollback;
+
 select 'كل اختبارات RLS نجحت' as result;
