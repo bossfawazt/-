@@ -116,6 +116,13 @@ pnpm dev                          # http://localhost:3000
 
 ## النشر (Vercel)
 
+**المشروع الحالي على Vercel:** `mimar-almanzil` (`prj_zMru1SCvDVbDXjNl46iRF81p8Zam`) مربوط بالمستودع.
+- يبني فرع `claude/kitchen-design-ai-platform-bw0959` فقط (أمر Ignored Build Step يتخطى أي فرع آخر).
+- كل الروابط محمية بـ Vercel Authentication حتى اعتماد الإطلاق العام.
+- الدوال في فرانكفورت (`fra1`) بجوار قاعدة البيانات، وNode 22.
+
+خطوات الإعداد من الصفر (للمرجع):
+
 1. استورد المستودع في Vercel (الإطار Next.js يُكتشف تلقائياً).
 2. أضف متغيرات البيئة من `.env.example` (لا تضف `ENABLE_DEV_LOGIN`).
 3. اربط النطاق؛ HTTPS تلقائي، ورأس HSTS مفعّل في الإنتاج من `next.config.ts`.
